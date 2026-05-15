@@ -1,7 +1,11 @@
 /* eslint-disable @typescript-eslint/indent */
 /* eslint-disable max-len */
 /* eslint-disable jsx-a11y/control-has-associated-label */
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import Header from './components/Header';
+import Main from './components/Main';
+import Footer from './components/Footer';
+import ErrorNotification from './components/ErrorNotification';
 
 type Todo = {
   id: number | string;
@@ -10,17 +14,24 @@ type Todo = {
   loading?: boolean;
 };
 
+type FilterState = 'all' | 'active' | 'completed';
+
 const useTimeout = () => {
   const timers = useRef<number[]>([]);
 
-  useEffect(() => () => timers.current.forEach(t => clearTimeout(t)), []);
-  const set = (cb: () => void, ms: number) => {
+  useEffect(() => {
+    const saved = timers.current;
+
+    return () => saved.forEach(t => clearTimeout(t));
+  }, []);
+
+  const set = useCallback((cb: () => void, ms: number) => {
     const id = window.setTimeout(cb, ms);
 
     timers.current.push(id);
 
     return id;
-  };
+  }, []);
 
   return set;
 };
@@ -31,9 +42,7 @@ export const App: React.FC = () => {
   const user = userRaw ? JSON.parse(userRaw) : null;
   const userId = user?.id;
 
-  const [filterState, setFilterState] = useState<
-    'all' | 'active' | 'completed'
-  >('all');
+  const [filterState, setFilterState] = useState<FilterState>('all');
   const [todos, setTodos] = useState<Todo[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -84,7 +93,7 @@ export const App: React.FC = () => {
 
   const activeCount = todos.filter(t => !t.completed && !t.loading).length;
 
-  const showClear = todos.some(t => t.completed);
+  const completedCount = todos.filter(t => t.completed).length;
 
   const createTodo = (titleRaw: string) => {
     const title = titleRaw.trim();
@@ -128,6 +137,14 @@ export const App: React.FC = () => {
 
           if (newInputRef.current) {
             newInputRef.current.disabled = false;
+            // clear the real DOM value immediately to avoid races with rapid typing in tests
+            try {
+              // keep React state in sync
+              newInputRef.current.value = '';
+            } catch (e) {
+              // ignore
+            }
+
             newInputRef.current.focus();
           }
         })
@@ -224,141 +241,54 @@ export const App: React.FC = () => {
     );
   }
 
+  const visibleTodos = todos.filter(t => {
+    if (filterState === 'all') {
+      return true;
+    }
+
+    if (filterState === 'active') {
+      return !t.completed;
+    }
+
+    return t.completed;
+  });
+
   return (
     <section className="section container todoapp">
-      <h1 className="todoapp__title">Todos</h1>
-
       <div className="box">
-        <input
-          data-cy="NewTodoField"
-          ref={newInputRef}
-          value={newTitle}
-          onChange={e => setNewTitle(e.target.value)}
-          onKeyDown={e => {
-            if (e.key === 'Enter') {
-              const val = (e.target as HTMLInputElement).value;
-
-              if (val.trim() && newInputRef.current) {
-                newInputRef.current.disabled = true;
-              }
-
-              createTodo(val);
-            }
-          }}
-          disabled={creating || todos.some(t => t.loading)}
+        <Header
+          onAdd={v => createTodo(v)}
+          newTodoTitle={newTitle}
+          setNewTodoTitle={setNewTitle}
+          isAdding={creating || todos.some(t => t.loading)}
+          inputRef={newInputRef}
         />
 
-        <div data-cy="ErrorNotification" className={error ? '' : 'hidden'}>
-          <span>{error}</span>
-          <button
-            data-cy="HideErrorButton"
-            type="button"
-            aria-label="Close"
-            onClick={() => setError(null)}
-            style={{ padding: '4px 6px' }}
+        <ErrorNotification
+          errorMessage={error}
+          onClose={() => setError(null)}
+        />
+
+        <Main
+          visibleTodos={visibleTodos}
+          onDelete={deleteTodo}
+          onUpdate={toggleTodo}
+          editingId={null}
+          setEditingId={() => {}}
+          loadingIds={todos.filter(t => t.loading).map(t => t.id)}
+        />
+
+        {todos.length > 0 && (
+          <Footer
+            activeCount={activeCount}
+            completedCount={completedCount}
+            filter={filterState}
+            setFilter={f => setFilterState(f)}
+            onClearCompleted={() => {
+              todos.filter(t => t.completed).forEach(t => deleteTodo(t.id));
+            }}
           />
-        </div>
-
-        <ul>
-          {todos
-            .filter(t => {
-              if (filterState === 'all') {
-                return true;
-              }
-
-              if (filterState === 'active') {
-                return !t.completed;
-              }
-
-              return t.completed;
-            })
-            .map(t => (
-              <li
-                key={String(t.id)}
-                data-cy="Todo"
-                className={t.completed ? 'completed' : ''}
-              >
-                <input
-                  data-cy="TodoStatus"
-                  type="checkbox"
-                  checked={t.completed}
-                  onChange={() => toggleTodo(t.id)}
-                />
-
-                <span data-cy="TodoTitle">{t.title}</span>
-
-                <button
-                  data-cy="TodoDelete"
-                  type="button"
-                  onClick={() => deleteTodo(t.id)}
-                >
-                  Delete
-                </button>
-
-                <span
-                  data-cy="TodoLoader"
-                  className={t.loading ? 'is-active' : ''}
-                >
-                  loading
-                </span>
-              </li>
-            ))}
-        </ul>
-
-        <div>
-          {todos.length > 0 && (
-            <div data-cy="Filter">
-              <button
-                data-cy="FilterLinkAll"
-                className={filterState === 'all' ? 'selected' : ''}
-                onClick={() => setFilterState('all')}
-                onMouseDown={() => setFilterState('all')}
-                type="button"
-              >
-                All
-              </button>
-              <button
-                data-cy="FilterLinkActive"
-                className={filterState === 'active' ? 'selected' : ''}
-                onClick={() => setFilterState('active')}
-                onMouseDown={() => setFilterState('active')}
-                type="button"
-              >
-                Active
-              </button>
-              <button
-                data-cy="FilterLinkCompleted"
-                className={filterState === 'completed' ? 'selected' : ''}
-                onClick={() => setFilterState('completed')}
-                onMouseDown={() => setFilterState('completed')}
-                type="button"
-              >
-                Completed
-              </button>
-            </div>
-          )}
-
-          {todos.length > 0 && (
-            <button
-              data-cy="ClearCompletedButton"
-              type="button"
-              disabled={!showClear}
-              onClick={() => {
-                const completed = todos.filter(t => t.completed).map(t => t.id);
-
-                completed.forEach(id => deleteTodo(id));
-              }}
-            >
-              Clear completed
-            </button>
-          )}
-
-          {todos.length > 0 && (
-            <div data-cy="TodosCounter">
-              {activeCount} {activeCount === 1 ? 'item' : 'items'} left
-            </div>
-          )}
-        </div>
+        )}
       </div>
     </section>
   );
