@@ -6,6 +6,8 @@ import Header from './components/Header';
 import Main from './components/Main';
 import Footer from './components/Footer';
 import ErrorNotification from './components/ErrorNotification';
+import FilterStatus from './types/FilterStatus';
+import ErrorMessage from './types/ErrorMessage';
 
 type Todo = {
   id: number | string;
@@ -14,7 +16,7 @@ type Todo = {
   loading?: boolean;
 };
 
-type FilterState = 'all' | 'active' | 'completed';
+type FilterState = FilterStatus;
 
 const useTimeout = () => {
   const timers = useRef<number[]>([]);
@@ -42,7 +44,7 @@ export const App: React.FC = () => {
   const user = userRaw ? JSON.parse(userRaw) : null;
   const userId = user?.id;
 
-  const [filterState, setFilterState] = useState<FilterState>('all');
+  const [filterState, setFilterState] = useState<FilterState>(FilterStatus.All);
   const [todos, setTodos] = useState<Todo[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -95,72 +97,77 @@ export const App: React.FC = () => {
 
   const completedCount = todos.filter(t => t.completed).length;
 
-  const createTodo = (titleRaw: string) => {
-    const title = titleRaw.trim();
+  const createTodo = useCallback(
+    (titleRaw: string) => {
+      const title = titleRaw.trim();
 
-    if (!title) {
-      setError('Title should not be empty');
-      setTimeoutSafe(() => setError(null), 3000);
+      if (!title) {
+        setError(ErrorMessage.EmptyTitle);
+        setTimeoutSafe(() => setError(null), 3000);
 
-      return;
-    }
+        return;
+      }
 
-    const tempId = `temp-${Date.now()}`;
-    const temp: Todo = { id: tempId, title, completed: false, loading: true };
+      const tempId = `temp-${Date.now()}`;
+      const temp: Todo = { id: tempId, title, completed: false, loading: true };
 
-    setTodos(prev => [...prev, temp]);
-    setCreating(true);
-    if (newInputRef.current) {
-      newInputRef.current.disabled = true;
-    }
+      setTodos(prev => [...prev, temp]);
+      setCreating(true);
+      if (newInputRef.current) {
+        newInputRef.current.disabled = true;
+      }
 
-    setTimeoutSafe(() => {
-      fetch('/todos', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title, userId }),
-      })
-        .then(async res => {
-          if (!res.ok) {
-            throw new Error('Unable to add');
-          }
-
-          const body = await res.json();
-
-          setTodos(prev =>
-            prev.map(t => (t.id === tempId ? { ...body, loading: false } : t)),
-          );
-
-          setNewTitle('');
-
-          setCreating(false);
-
-          if (newInputRef.current) {
-            newInputRef.current.disabled = false;
-            // clear the real DOM value immediately to avoid races with rapid typing in tests
-            try {
-              // keep React state in sync
-              newInputRef.current.value = '';
-            } catch (e) {
-              // ignore
+      setTimeoutSafe(() => {
+        fetch('/todos', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ title, userId }),
+        })
+          .then(async res => {
+            if (!res.ok) {
+              throw new Error(ErrorMessage.Add);
             }
 
-            newInputRef.current.focus();
-          }
-        })
-        .catch(() => {
-          setTodos(prev => prev.filter(t => t.id !== tempId));
-          setError('Unable to add a todo');
-          setTimeoutSafe(() => setError(null), 3000);
-          setNewTitle(titleRaw);
-          setCreating(false);
-          if (newInputRef.current) {
-            newInputRef.current.disabled = false;
-            newInputRef.current.focus();
-          }
-        });
-    }, 500);
-  };
+            const body = await res.json();
+
+            setTodos(prev =>
+              prev.map(t =>
+                t.id === tempId ? { ...body, loading: false } : t,
+              ),
+            );
+
+            setNewTitle('');
+
+            setCreating(false);
+
+            if (newInputRef.current) {
+              newInputRef.current.disabled = false;
+              // clear the real DOM value immediately to avoid races with rapid typing in tests
+              try {
+                // keep React state in sync
+                newInputRef.current.value = '';
+              } catch (e) {
+                // ignore
+              }
+
+              newInputRef.current.focus();
+            }
+          })
+          .catch(() => {
+            setTodos(prev => prev.filter(t => t.id !== tempId));
+            setError(ErrorMessage.Add);
+            setTimeoutSafe(() => setError(null), 3000);
+            setNewTitle(titleRaw);
+            setCreating(false);
+            if (newInputRef.current) {
+              newInputRef.current.disabled = false;
+              newInputRef.current.focus();
+            }
+          });
+      }, 500);
+    },
+    [userId, setTimeoutSafe],
+  );
 
   const deleteTodo = (id: number | string) => {
     setTodos(prev =>
@@ -182,7 +189,7 @@ export const App: React.FC = () => {
           setTodos(prev =>
             prev.map(t => (t.id === id ? { ...t, loading: false } : t)),
           );
-          setError('Unable to delete a todo');
+          setError(ErrorMessage.Delete);
           setTimeoutSafe(() => setError(null), 3000);
         });
     }, 0);
@@ -211,7 +218,7 @@ export const App: React.FC = () => {
     })
       .then(async res => {
         if (!res.ok) {
-          throw new Error('Unable to update');
+          throw new Error(ErrorMessage.Update);
         }
 
         const body = await res.json();

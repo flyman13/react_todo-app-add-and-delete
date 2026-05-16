@@ -1,11 +1,12 @@
 import React from 'react';
 import classNames from 'classnames';
+import FilterStatus from '../types/FilterStatus';
 
 interface Props {
   activeCount: number;
   completedCount: number;
-  filter: 'all' | 'active' | 'completed';
-  setFilter: (f: 'all' | 'active' | 'completed') => void;
+  filter: FilterStatus;
+  setFilter: (f: FilterStatus) => void;
   onClearCompleted: () => void;
 }
 
@@ -23,35 +24,18 @@ export const Footer: React.FC<Props> = ({
       </div>
 
       <div data-cy="Filter">
-        <button
-          data-cy="FilterLinkAll"
-          className={classNames({ selected: filter === 'all' })}
-          onClick={() => setFilter('all')}
-          onMouseDown={() => setFilter('all')}
-          type="button"
-        >
-          All
-        </button>
-
-        <button
-          data-cy="FilterLinkActive"
-          className={classNames({ selected: filter === 'active' })}
-          onClick={() => setFilter('active')}
-          onMouseDown={() => setFilter('active')}
-          type="button"
-        >
-          Active
-        </button>
-
-        <button
-          data-cy="FilterLinkCompleted"
-          className={classNames({ selected: filter === 'completed' })}
-          onClick={() => setFilter('completed')}
-          onMouseDown={() => setFilter('completed')}
-          type="button"
-        >
-          Completed
-        </button>
+        {Object.values(FilterStatus).map(f => (
+          <button
+            key={f}
+            data-cy={`FilterLink${f[0].toUpperCase() + f.slice(1)}`}
+            className={classNames({ selected: filter === f })}
+            onClick={() => setFilter(f)}
+            onMouseDown={() => setFilter(f)}
+            type="button"
+          >
+            {f[0].toUpperCase() + f.slice(1)}
+          </button>
+        ))}
       </div>
 
       <button
