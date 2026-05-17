@@ -8,6 +8,7 @@ import Footer from './components/Footer';
 import ErrorNotification from './components/ErrorNotification';
 import FilterStatus from './types/FilterStatus';
 import ErrorMessage from './types/ErrorMessage';
+import { BASE_URL } from './config/api';
 
 type Todo = {
   id: number | string;
@@ -72,7 +73,7 @@ export const App: React.FC = () => {
 
     const controller = new AbortController();
 
-    fetch(`/todos?userId=${userId}`, { signal: controller.signal })
+    fetch(`${BASE_URL}/todos?userId=${userId}`, { signal: controller.signal })
       .then(async res => {
         if (!res.ok) {
           throw new Error('Unable to load');
@@ -118,7 +119,7 @@ export const App: React.FC = () => {
       }
 
       setTimeoutSafe(() => {
-        fetch('/todos', {
+        fetch(`${BASE_URL}/todos`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ title, userId }),
@@ -175,7 +176,7 @@ export const App: React.FC = () => {
     );
 
     setTimeoutSafe(() => {
-      fetch(`/todos/${id}`, { method: 'DELETE' })
+      fetch(`${BASE_URL}/todos/${id}`, { method: 'DELETE' })
         .then(async res => {
           if (!res.ok) {
             throw new Error('Unable to delete');
@@ -211,7 +212,7 @@ export const App: React.FC = () => {
       ),
     );
 
-    fetch(`/todos/${id}`, {
+    fetch(`${BASE_URL}/todos/${id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ completed: newCompleted }),

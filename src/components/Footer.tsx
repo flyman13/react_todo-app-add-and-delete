@@ -24,22 +24,26 @@ export const Footer: React.FC<Props> = ({
       </div>
 
       <div data-cy="Filter">
-        {Object.values(FilterStatus).map(f => (
-          <button
-            key={f}
-            data-cy={`FilterLink${f[0].toUpperCase() + f.slice(1)}`}
-            className={classNames({ selected: filter === f })}
-            onClick={() => setFilter(f)}
-            onMouseDown={() => setFilter(f)}
-            type="button"
-          >
-            {f[0].toUpperCase() + f.slice(1)}
-          </button>
-        ))}
+        <ul className="filters">
+          {Object.values(FilterStatus).map(f => (
+            <li key={f}>
+              <button
+                data-cy={`FilterLink${f[0].toUpperCase() + f.slice(1)}`}
+                className={classNames({ selected: filter === f })}
+                onClick={() => setFilter(f)}
+                onMouseDown={() => setFilter(f)}
+                type="button"
+              >
+                {f[0].toUpperCase() + f.slice(1)}
+              </button>
+            </li>
+          ))}
+        </ul>
       </div>
 
       <button
         data-cy="ClearCompletedButton"
+        className="clear-completed"
         type="button"
         disabled={completedCount === 0}
         onClick={onClearCompleted}

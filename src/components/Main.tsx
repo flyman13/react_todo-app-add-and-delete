@@ -20,15 +20,16 @@ interface Props {
 export const Main: React.FC<Props> = ({ visibleTodos, onDelete, onUpdate }) => {
   return (
     <section className="main">
-      <ul>
+      <ul className="todo-list">
         {visibleTodos.map(t => (
           <li
             key={String(t.id)}
             data-cy="Todo"
-            className={classNames({ completed: t.completed })}
+            className={classNames('todo', { completed: t.completed })}
           >
             <input
               data-cy="TodoStatus"
+              className="toggle"
               id={`todo-status-${t.id}`}
               type="checkbox"
               checked={t.completed}
@@ -41,13 +42,16 @@ export const Main: React.FC<Props> = ({ visibleTodos, onDelete, onUpdate }) => {
 
             <button
               data-cy="TodoDelete"
+              className="destroy"
               type="button"
               onClick={() => onDelete(t.id)}
-            >
-              Delete
-            </button>
+              aria-label={`Delete ${t.title}`}
+            />
 
-            <span data-cy="TodoLoader" className={t.loading ? 'is-active' : ''}>
+            <span
+              data-cy="TodoLoader"
+              className={classNames('loader', { 'is-active': t.loading })}
+            >
               loading
             </span>
           </li>

@@ -25,6 +25,7 @@ export const Header: React.FC<Props> = ({
           e.preventDefault();
           onAdd(newTodoTitle);
         }}
+        className="add-todo"
       >
         <label htmlFor="new-todo" className="visually-hidden">
           Add todo
@@ -32,11 +33,14 @@ export const Header: React.FC<Props> = ({
 
         <input
           id="new-todo"
+          className="new-todo"
+          placeholder="What needs to be done?"
           data-cy="NewTodoField"
           ref={inputRef}
           value={newTodoTitle}
           onChange={e => setNewTodoTitle(e.target.value)}
           disabled={isAdding}
+          aria-label="New todo"
         />
       </form>
     </header>
