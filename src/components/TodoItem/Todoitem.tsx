@@ -58,9 +58,11 @@ export const TodoItem: React.FC<Props> = ({
     }
   }
 
-  const [deletingTodoId, setDeletingTodoId] = useState<number | null>(null);
+  // Use shared updatingIds array to support multiple concurrent operations
   const onDelete = async (postId: number) => {
-    setDeletingTodoId(postId);
+    setErrorMessage('');
+    // mark this id as updating
+    setUpdatingIds(prev => [...prev, postId]);
     try {
       await postService.deletePost(postId);
       setPosts(currentPosts => currentPosts.filter(post => post.id !== postId));
@@ -68,7 +70,8 @@ export const TodoItem: React.FC<Props> = ({
       setErrorMessage('Unable to delete a todo');
       setTimeout(() => setErrorMessage(''), 3000);
     } finally {
-      setDeletingTodoId(null);
+      // remove id from updating list
+      setUpdatingIds(prev => prev.filter(updatingId => updatingId !== postId));
     }
   };
 
@@ -158,30 +161,21 @@ export const TodoItem: React.FC<Props> = ({
             className="todo__remove"
             data-cy="TodoDelete"
             onClick={() => onDelete(post.id)}
-            disabled={deletingTodoId === post.id}
+            disabled={updatingIds.includes(post.id)}
           >
             ×
           </button>
-          {deletingTodoId === post.id && (
+
+          {/* show loader per-post when its id is in updatingIds */}
+          {updatingIds.includes(post.id) && (
             <div
               data-cy="TodoLoader"
-              className={classNames('modal overlay', {
-                'is-active': updatingIds,
-              })}
+              className={classNames('modal overlay', { 'is-active': true })}
             >
               <div className="modal-background has-background-white-ter" />
               <div className="loader" />
             </div>
           )}
-          <div
-            data-cy="TodoLoader"
-            className={classNames('modal overlay', {
-              'is-active': !updatingIds,
-            })}
-          >
-            <div className="modal-background has-background-white-ter" />
-            <div className="loader" />
-          </div>
         </div>
       ))}
     </div>
