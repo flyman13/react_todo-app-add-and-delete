@@ -2,6 +2,7 @@ import '../../styles/todoapp.scss';
 import { Dispatch, SetStateAction, useEffect, useRef, useState } from 'react';
 import * as postService from '../../api/todos';
 import { USER_ID } from '../../api/todos';
+import { ErrorMessage } from '../../types/ErrorMessage';
 import { Todo } from '../../types/Todo';
 import React from 'react';
 
@@ -43,7 +44,7 @@ export const TodoApp: React.FC<Props> = ({
     const value = title.trim();
 
     if (!value) {
-      setErrorMessage('Title should not be empty');
+      setErrorMessage(ErrorMessage.TitleEmpty);
 
       return;
     }
@@ -62,7 +63,7 @@ export const TodoApp: React.FC<Props> = ({
       setPosts(current => [...current, newTodo]);
       setTitle('');
     } catch {
-      setErrorMessage('Unable to add a todo');
+      setErrorMessage(ErrorMessage.AddTodo);
     } finally {
       setIsAdding(false);
       setTempTodo(null);

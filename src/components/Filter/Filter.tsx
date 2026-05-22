@@ -3,6 +3,7 @@ import { Filter as Filters, Todo } from '../../types/Todo';
 import { Dispatch, SetStateAction } from 'react';
 import React from 'react';
 import * as postService from '../../api/todos';
+import { ErrorMessage } from '../../types/ErrorMessage';
 
 type Props = {
   posts: Todo[];
@@ -39,7 +40,7 @@ export const Filter: React.FC<Props> = ({
     );
     // Якщо хоч одне видалення не вдалося — показуємо помилку
     if (results.some(result => result.status === 'rejected')) {
-      setErrorMessage('Unable to delete a todo');
+      setErrorMessage(ErrorMessage.DeleteTodo);
     }
   };
 

@@ -1,6 +1,7 @@
 /* eslint-disable jsx-a11y/label-has-associated-control */
 import '../../styles/todo.scss';
 import * as postService from '../../api/todos';
+import { ErrorMessage } from '../../types/ErrorMessage';
 import { Filter, Todo as Todos } from '../../types/Todo';
 import { useState } from 'react';
 import React from 'react';
@@ -52,7 +53,7 @@ export const TodoItem: React.FC<Props> = ({
 
       setPosts(prev => prev.map(post => (post.id === id ? serverTodo : post)));
     } catch (error) {
-      setErrorMessage('Unable to update a todo');
+      setErrorMessage(ErrorMessage.UpdateTodo);
     } finally {
       setUpdatingIds(prev => prev.filter(updatingId => updatingId !== id));
     }
@@ -67,7 +68,7 @@ export const TodoItem: React.FC<Props> = ({
       await postService.deletePost(postId);
       setPosts(currentPosts => currentPosts.filter(post => post.id !== postId));
     } catch (error) {
-      setErrorMessage('Unable to delete a todo');
+      setErrorMessage(ErrorMessage.DeleteTodo);
       setTimeout(() => setErrorMessage(''), 3000);
     } finally {
       // remove id from updating list
@@ -105,7 +106,7 @@ export const TodoItem: React.FC<Props> = ({
         post.map(todos => (todos.id === todos.id ? updated : todos)),
       );
     } catch {
-      setErrorMessage('Unable to delete a todo');
+      setErrorMessage(ErrorMessage.DeleteTodo);
     } finally {
       setIsUpdating(false);
       setIsEditing(false);
@@ -166,16 +167,16 @@ export const TodoItem: React.FC<Props> = ({
             ×
           </button>
 
-          {/* show loader per-post when its id is in updatingIds */}
-          {updatingIds.includes(post.id) && (
-            <div
-              data-cy="TodoLoader"
-              className={classNames('modal overlay', { 'is-active': true })}
-            >
-              <div className="modal-background has-background-white-ter" />
-              <div className="loader" />
-            </div>
-          )}
+          {/* always render per-todo loader; toggle active class by id presence */}
+          <div
+            data-cy="TodoLoader"
+            className={classNames('modal overlay', {
+              'is-active': updatingIds.includes(post.id),
+            })}
+          >
+            <div className="modal-background has-background-white-ter" />
+            <div className="loader" />
+          </div>
         </div>
       ))}
     </div>

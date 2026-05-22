@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { UserWarning } from './UserWarning';
 import { getTodos, USER_ID } from './api/todos';
 import { Filter as Filters, Todo as Todos } from './types/Todo';
+import { ErrorMessage } from './types/ErrorMessage';
 
 import { TodoApp } from './components/TodoApp/Todoapp';
 import { Todo } from './components/Todo/Todo';
@@ -13,7 +14,12 @@ export const App: React.FC = () => {
   const [posts, setPosts] = useState<Todos[]>([]);
   const [loading, setLoading] = useState(false);
   const [filter, setFilter] = useState<Filters>(Filters.all);
-  const [todo] = useState<Todos>([]);
+  const [todo] = useState<Todos>({
+    id: 0,
+    title: '',
+    completed: false,
+    userId: USER_ID,
+  });
 
   const [errorMessage, setErrorMessage] = useState('');
   const hasTodos = posts.length > 0;
@@ -26,7 +32,7 @@ export const App: React.FC = () => {
     setLoading(true);
     getTodos()
       .then(setPosts)
-      .catch(() => setErrorMessage('Unable to load todos'))
+      .catch(() => setErrorMessage(ErrorMessage.LoadTodos))
       .finally(() => setLoading(false));
   }, []);
 
@@ -36,6 +42,8 @@ export const App: React.FC = () => {
 
       return () => clearTimeout(timer);
     }
+
+    return () => undefined;
   }, [errorMessage]);
 
   if (!USER_ID) {
